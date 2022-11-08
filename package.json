@@ -1,0 +1,19 @@
+{
+  "name": "yssi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "commander": "^9.4.0",
+    "md5": "^2.3.0",
+    "string-format": "^2.0.0",
+    "uuid": "^9.0.0"
+  }
+}
