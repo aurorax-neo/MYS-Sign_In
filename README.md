@@ -21,3 +21,26 @@ if (ask == true) {
 ```
 
 然后安回车，此时Cookie已经复制到你的粘贴板上了。
+
+##### 配置文件
+
+在MYS-Sign_In.js同级目录下创建ysconfig.json为文件，内容如下：
+
+```
+{
+  "YuanShen": [
+    {
+      "cookie": ""
+    },
+    {
+      "cookie": ""
+    },
+    {
+      "cookie": ""
+    }
+  ]
+}
+```
+
+也可以通过传入--configpath xxx/xxx.json（配置文件全路径）指定配置文件。
+
