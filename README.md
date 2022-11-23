@@ -26,8 +26,11 @@ if (ask == true) {
 
 在MYS-Sign_In.js同级目录下创建ysconfig.json为文件，内容如下：
 
+​	注：OCR_TOKEN获取详情https://ocr.kuxi.tech/user/login
+
 ```
 {
+  "OCR_TOKEN": "8tiZAksApxReXQUg6gzSTPxsq9BNb3dp",
   "YuanShen": [
     {
       "cookie": ""
