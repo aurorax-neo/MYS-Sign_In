@@ -114,7 +114,6 @@ async function Sign_In(res, config) {
             const res = await $axios.request({
                 method: 'POST', url: SIGN_URL, headers: headers, data: post_data
             });
-            console.log(res.data)
             const res_data = res.data;
             const res_data_data = res.data;
             let message = `【${region_name}】[ Lv : ${level} ]\n【${nickname}】[ UID : ${game_uid} ]\n`
@@ -128,9 +127,10 @@ async function Sign_In(res, config) {
                 message = `${message}【提示】[今天已经签到过了!]\n`;
                 console.info(message);
                 break;
-            } else if (i === count && Number(res_data_data.data["success"]) === -1) {
+            } else if (i === count && Number(res_data_data.data["success"]) === 1) {
                 message = `${message}【提示】[签到失败!]\n`;
                 console.info(message)
+                break;
             }
 
             //同ip请求次数过多
