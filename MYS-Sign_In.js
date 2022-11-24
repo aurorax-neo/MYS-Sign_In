@@ -3,6 +3,7 @@ const {program} = require('commander');
 const md5 = require('md5');
 const fs = require('fs');
 const uuid = require('uuid');
+const crypto = require('crypto');
 
 const GENSHIN_SIGN_ACT_ID = 'e202009291139501';
 const WEB_HOST = "api-takumi.mihoyo.com";
@@ -17,8 +18,11 @@ const APP_VERSION = "2.38.1";
 const USER_AGENT = `Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/${APP_VERSION}`;
 const REFERER = `https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=${GENSHIN_SIGN_ACT_ID}&utm_source=bbs&utm_medium=mys&utm_campaign=icon`;
 
+//全局配置文件
 let CONFIG = {};
-let ROLE = {
+
+//GENSHIN角色信息
+let GENSHIN_ROLE = {
     game_biz: '',
     region: '',
     game_uid: '',
@@ -28,6 +32,8 @@ let ROLE = {
     region_name: '',
     is_official: false
 };
+
+//GENSHIN请求头
 let HEADERS = {
     "DS": '',
     "Cookie": '',
@@ -47,17 +53,21 @@ let HEADERS = {
     "x-rpc-device_id": uuid.v4()
 };
 
+//控制台参数获取
 function parse_arguments() {
     program.option('--configpath <>', '配置路径', './ysconfig.json').parse();
     return program.opts();
 }
 
+//睡眠函数
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 
+//axios
 const $axios = axios.create({
     // timeout: 15000
 });
 
+//获取CONFIG配置
 async function getConfig() {
     //获取配置路径
     const {configpath} = parse_arguments();
@@ -73,6 +83,7 @@ async function getDS() {
     return `${t},${r},${md5(c)}`;
 }
 
+//设置请求头
 async function setHeaders(cookie, ds, challenge = '', validate = '') {
     HEADERS.Cookie = cookie;
     HEADERS.DS = ds;
@@ -81,7 +92,7 @@ async function setHeaders(cookie, ds, challenge = '', validate = '') {
     HEADERS['x-rpc-seccode'] = `${validate}|jordan`;
 }
 
-
+//获取GENSHIN角色信息
 async function getRole(config) {
     await setHeaders(config.cookie, await getDS());
     if (HEADERS.cookie === 0) {
@@ -100,10 +111,11 @@ async function getRole(config) {
         console.info('帐号未登录！请检查cookie!!!');
         return 0;
     }
-    ROLE = res.data.data.list[0]
+    GENSHIN_ROLE = res.data.data.list[0]
     return res.data;
 }
 
+//获取GENSHIN签到信息
 async function getSignInfo(config) {
     await setHeaders(config.cookie, await getDS());
     const res = await $axios.request({
@@ -112,8 +124,8 @@ async function getSignInfo(config) {
         headers: HEADERS,
         params: {
             act_id: GENSHIN_SIGN_ACT_ID,
-            region: ROLE.region,
-            uid: ROLE.game_uid
+            region: GENSHIN_ROLE.region,
+            uid: GENSHIN_ROLE.game_uid
         }
     }).catch(err => {
         console.error(err)
@@ -123,25 +135,26 @@ async function getSignInfo(config) {
     return res.data;
 }
 
-async function getValidate(config, gt, challenge) {
-    const OCR_URL = `https://api.ocr.kuxi.tech/api/recognize?token=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${REFERER}`;
+// 获取GENSHIN奖励信息
+async function getAwards() {
     const res = await $axios.request({
-        method: 'POST', url: OCR_URL
+        method: "GET",
+        url: GENSHIN_SIGN_CHECKIN_REWARDS_URL,
     }).catch(err => {
-        console.error('验证码识别错误\n' + err);
-        return null;
+        console.error(err)
     });
-    if (res.data.code !== 0) {
-        return null;
+    if (res.data['retcode'] !== 0) {
+        return 0;
     }
-    return res.data;
+    return res.data.data['awards'];
 }
 
-
+// GENSHIN签到
 async function Sign_In(config) {
-    if (ROLE !== 0) {
+    if (GENSHIN_ROLE !== 0) {
         const cookie = config.cookie;
-        const post_data = `{"act_id":"${GENSHIN_SIGN_ACT_ID}","region":"${ROLE.region}","uid":"${ROLE.game_uid}"}`;
+        let message = `【${GENSHIN_ROLE.nickname}】[ UID : ${GENSHIN_ROLE.game_uid} ]\n【${GENSHIN_ROLE.region_name}】[ Lv : ${GENSHIN_ROLE.level} ]\n`;
+        const post_data = `{"act_id":"${GENSHIN_SIGN_ACT_ID}","region":"${GENSHIN_ROLE.region}","uid":"${GENSHIN_ROLE.game_uid}"}`;
         await setHeaders(cookie, await getDS())
         const count = 3;//重试次数
         for (let i = 0; i <= count; i++) {
@@ -156,7 +169,6 @@ async function Sign_In(config) {
             });
             const res_data = res.data;
             const res_data_data = res.data;
-            let message = `【${ROLE.nickname}】[ UID : ${ROLE.game_uid} ]\n【${ROLE.region_name}】[ Lv : ${ROLE.level} ]\n`;
 
             const signInfo = await getSignInfo(config);
             const sign_days = signInfo.data["total_sign_day"];
@@ -165,15 +177,15 @@ async function Sign_In(config) {
 
             if (signInfo.data['is_sign'] || res_data["retcode"] === -5003) {//已经签过直接跳过
                 message = `${message}【提示】[今天已经签到过了!]\n【奖励】[${awards['name']}x${awards['cnt']}]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
-                console.info(message);
+                // console.info(message);
                 break;
             } else if (res_data["retcode"] === 0 && Number(res_data_data.data["success"]) === 0) {//签到成功
                 message = `${message}【提示】[签到成功!]\n【奖励】[${awards['name']}x${awards['cnt']}]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
-                console.info(message)
+                // console.info(message)
                 break;
             } else if (i === count && Number(res_data_data.data["success"]) === 1) {
                 message = `${message}【提示】[签到失败!]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
-                console.info(message)
+                // console.info(message)
                 break;
             }
 
@@ -199,22 +211,63 @@ async function Sign_In(config) {
                 await sleep(3000);
             }
         }
+        //返回信息
+        return message;
     }
 }
 
-async function getAwards() {
+//OCR识别验证码
+async function getValidate(config, gt, challenge) {
+    const OCR_URL = `https://api.ocr.kuxi.tech/api/recognize?token=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${REFERER}`;
     const res = await $axios.request({
-        method: "GET",
-        url: GENSHIN_SIGN_CHECKIN_REWARDS_URL,
+        method: 'POST', url: OCR_URL
     }).catch(err => {
-        console.error(err)
+        console.error('验证码识别错误\n' + err);
+        return null;
     });
-    if (res.data['retcode'] !== 0) {
-        return 0;
+    if (res.data.code !== 0) {
+        return null;
     }
-    return res.data.data['awards'];
+    return res.data;
 }
 
+//钉钉自定义机器人推送
+async function dingdingBot(config, title, content) {
+
+    const SWITCH = config['DD_BOT']['SWITCH'];
+    const access_token = config['DD_BOT']['DD_BOT_TOKEN'];
+    const secret = config['DD_BOT']['DD_BOT_SECRET'];
+    if (SWITCH && access_token && secret) {
+        //utf-8编码secret
+        const secret_enc = new Buffer.from(secret).toString('utf-8');
+        //毫秒时间戳
+        const timestamp = new Date().getTime();
+        //utf-8编码str_to_sign
+        const str_to_sign_enc = new Buffer.from(`${timestamp}\n${secret}`).toString('utf-8');
+        //base64编码sign
+        const sign_enc = crypto.createHmac('sha256', secret_enc).update(str_to_sign_enc).digest('base64');
+        //推送url
+        const pushUrl = `https://oapi.dingtalk.com/robot/send?access_token=${access_token}&timestamp=${timestamp}&sign=${sign_enc}`;
+        const post_data = {
+            msgtype: "text",
+            text: {
+                content: `${title}\n\n${content}`
+            }
+        };
+        const headers = {"Content-Type": "application/json;charset=utf-8"};
+        const res = await $axios.request({
+            method: 'POST', url: pushUrl, headers: headers, data: JSON.stringify(post_data)
+        }).catch(err => {
+            console.error(err);
+        })
+        if (res.data['errcode'] !== 0) {
+            console.error('推送失败！');
+        }
+        console.info('推送成功！');
+    }
+}
+
+//主函数
 async function main() {
     //打印标题
     console.info('[米游社 原神签到]\n');
@@ -227,9 +280,12 @@ async function main() {
     for (const i in YuanShenConfig) {
         console.info(`第${Number(i) + 1}位用户开始签到...`)
         await getRole(YuanShenConfig[i]);
-        await Sign_In(YuanShenConfig[i])
+        const message = await Sign_In(YuanShenConfig[i]);
+        console.info(message)
+        await dingdingBot(YuanShenConfig[i], '[米游社 原神签到]', message);
         await sleep(3000);
     }
 }
 
 main().then();
+
