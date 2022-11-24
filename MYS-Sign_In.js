@@ -335,13 +335,13 @@ async function Sign_In(config) {
             let awards = await getAwards();
             awards = awards[sign_days - 1];
 
-            if (signInfo.data['is_sign'] || res_data["retcode"] === -5003) {//已经签过直接跳过
-                message = `${message}【提示】[今天已经签到过了!]\n【奖励】[${awards['name']}x${awards['cnt']}]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
-                // console.info(message);
-                break;
-            } else if (res_data["retcode"] === 0 && Number(res_data_data.data["success"]) === 0) {//签到成功
+            if (res_data["retcode"] === 0 && Number(res_data_data.data["success"]) === 0) {//签到成功
                 message = `${message}【提示】[签到成功!]\n【奖励】[${awards['name']}x${awards['cnt']}]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
                 // console.info(message)
+                break;
+            } else if (signInfo.data['is_sign'] || res_data["retcode"] === -5003) {//已经签过直接跳过
+                message = `${message}【提示】[今天已经签到过了!]\n【奖励】[${awards['name']}x${awards['cnt']}]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
+                // console.info(message);
                 break;
             } else if (i === count && Number(res_data_data.data["success"]) === 1) {
                 message = `${message}【提示】[签到失败!]\n【总计】[共签到${signInfo.data['total_sign_day']}天，漏签${signInfo.data['sign_cnt_missed']}天]\n`;
@@ -374,7 +374,7 @@ async function Sign_In(config) {
         //返回信息
         return message;
     }
-    return '登录失败，请检查cookie！！！'
+    return '登录失败，请检查cookie！！！\n';
 }
 
 //OCR识别验证码
@@ -422,9 +422,9 @@ async function dingdingBot(config, title, content) {
             console.error(err);
         })
         if (res.data['errcode'] !== 0) {
-            console.error('推送失败！');
+            console.error('钉钉推送失败！\n');
         }
-        console.info('推送成功！');
+        console.info('钉钉推送成功！\n');
     }
 }
 
