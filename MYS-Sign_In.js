@@ -117,6 +117,20 @@ async function getRole(config) {
 
 //获取GENSHIN签到信息
 async function getSignInfo(config) {
+    const defaultData = {
+        retcode: -1,
+        message: 'no',
+        data: {
+            total_sign_day: -1,
+            today: '****-**-**',
+            is_sign: false,
+            first_bind: false,
+            is_sub: false,
+            month_first: false,
+            sign_cnt_missed: -1,
+            month_last_day: false
+        }
+    };
     await setHeaders(config.cookie, await getDS());
     const res = await $axios.request({
         method: "GET",
@@ -129,22 +143,168 @@ async function getSignInfo(config) {
         }
     }).catch(err => {
         console.error(err)
+        return defaultData;
     });
     if (res.data['retcode'] !== 0) {
+        return defaultData;
     }
     return res.data;
 }
 
 // 获取GENSHIN奖励信息
 async function getAwards() {
+    const defaultData = {
+        retcode: -1,
+        message: 'no',
+        data: {
+            month: -1,
+            awards: [
+                {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }, {
+                    "icon": "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimages.669pic.com%2Felement_pic%2F24%2F29%2F27%2F87%2Fc4d4331ecb441db3e1895baa8b3715cb.jpg&refer=http%3A%2F%2Fimages.669pic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1671887248&t=4c5cff650051ceb87806cb3df203b435",
+                    "name": "xxx",
+                    "cnt": -1
+                }
+            ],
+            resign: false
+        }
+    };
     const res = await $axios.request({
         method: "GET",
         url: GENSHIN_SIGN_CHECKIN_REWARDS_URL,
     }).catch(err => {
         console.error(err)
+        return defaultData;
     });
     if (res.data['retcode'] !== 0) {
-        return 0;
+        return defaultData;
     }
     return res.data.data['awards'];
 }
