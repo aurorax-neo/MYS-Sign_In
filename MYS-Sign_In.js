@@ -10,13 +10,13 @@ const WEB_HOST = "api-takumi.mihoyo.com";
 const GENSHIN_ROLE_URL = `https://${WEB_HOST}/binding/api/getUserGameRolesByCookie?game_biz=hk4e_cn`;
 const GENSHIN_SIGN_URL = `https://${WEB_HOST}/event/bbs_sign_reward/sign`;
 const GENSHIN_SIGN_CHECKIN_REWARDS_URL = `https://${WEB_HOST}/event/bbs_sign_reward/home?act_id=${GENSHIN_SIGN_ACT_ID}`;
-const GENSHIN_IS_SIGN_URL = `https://${WEB_HOST}/event/bbs_sign_reward/info`;
+const GENSHIN_SIGN_INFO_URL = `https://${WEB_HOST}/event/bbs_sign_reward/info`;
+const GENSHIN_SIGN_REFERER = `https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=${GENSHIN_SIGN_ACT_ID}&utm_source=bbs&utm_medium=mys&utm_campaign=icon`;
 
 const CLIENT_TYPE_WEB = "5"; // 4为pc web 5为mobile web
 const SYS_VERSION = "12";
 const APP_VERSION = "2.38.1";
 const USER_AGENT = `Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/${APP_VERSION}`;
-const REFERER = `https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=${GENSHIN_SIGN_ACT_ID}&utm_source=bbs&utm_medium=mys&utm_campaign=icon`;
 
 //全局配置文件
 let CONFIG = {};
@@ -45,7 +45,7 @@ let HEADERS = {
     "Accept-Language": "zh-CN,en-US;q=0.8",
     "Origin": "https://webstatic.mihoyo.com",
     "User-Agent": USER_AGENT,
-    "Referer": REFERER,
+    "Referer": GENSHIN_SIGN_REFERER,
     "Host": WEB_HOST,
     "x-rpc-sys_version": SYS_VERSION,
     "x-rpc-app_version": APP_VERSION,
@@ -134,7 +134,7 @@ async function getSignInfo(config) {
     await setHeaders(config.cookie, await getDS());
     const res = await $axios.request({
         method: "GET",
-        url: GENSHIN_IS_SIGN_URL,
+        url: GENSHIN_SIGN_INFO_URL,
         headers: HEADERS,
         params: {
             act_id: GENSHIN_SIGN_ACT_ID,
@@ -359,7 +359,7 @@ async function Sign_In(config) {
             //触发验证码
             if (res_data["retcode"] === 0 && Number(res_data_data.data["success"]) === 1) {
                 if (config['OCR_TOKEN'].length > 0) {
-                    const data = await getValidate(config, res_data_data.data['gt'], res_data_data.data['challenge']);
+                    const data = await getValidate(config, res_data_data.data['gt'], res_data_data.data['challenge'], GENSHIN_SIGN_REFERER);
                     const validate = data.data['validate'] ? data.data['validate'] : null;
                     if (validate) {
                         console.info('验证成功，即将签到...')
@@ -378,8 +378,8 @@ async function Sign_In(config) {
 }
 
 //OCR识别验证码
-async function getValidate(config, gt, challenge) {
-    const OCR_URL = `https://api.ocr.kuxi.tech/api/recognize?token=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${REFERER}`;
+async function getValidate(config, gt, challenge, referer) {
+    const OCR_URL = `https://api.ocr.kuxi.tech/api/recognize?token=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${referer}`;
     const res = await $axios.request({
         method: 'POST', url: OCR_URL
     }).catch(err => {
