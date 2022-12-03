@@ -18,6 +18,8 @@ const SYS_VERSION = "12";
 const APP_VERSION = "2.38.1";
 const USER_AGENT = `Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/${APP_VERSION}`;
 
+const DEV_LOG = false
+
 //全局配置文件
 let CONFIG = {};
 
@@ -60,7 +62,7 @@ function parse_arguments() {
 }
 
 //睡眠函数
-const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+const sleep = (millisecond) => new Promise((resolve) => setTimeout(resolve, millisecond))
 
 //axios
 const $axios = axios.create({
@@ -96,19 +98,19 @@ async function setHeaders(cookie, ds, challenge = '', validate = '') {
 async function getRole(config) {
     await setHeaders(config.cookie, await getDS());
     if (HEADERS.cookie === 0) {
-        console.info('cookie错误，重新获取!!!')
+        if (DEV_LOG) console.log('cookie错误，重新获取!!!')
         return 0;
     }
     //利用cookie登录
     const res = await $axios.request({
         method: 'GET', url: GENSHIN_ROLE_URL, headers: HEADERS
     }).catch(err => {
-        console.error('登录错误\n' + err);
+        if (DEV_LOG) console.error('登录错误\n' + err);
         return 0;
     });
     //登录未成功
     if (res.data['retcode'] !== 0) {
-        console.info('帐号未登录！请检查cookie!!!');
+        if (DEV_LOG) console.log('帐号未登录！请检查cookie!!!', res.data);
         return 0;
     }
     GENSHIN_ROLE = res.data.data.list[0]
@@ -142,10 +144,11 @@ async function getSignInfo(config) {
             uid: GENSHIN_ROLE.game_uid
         }
     }).catch(err => {
-        console.error(err)
+        if (DEV_LOG) console.error("获取角色信息错误", err)
         return defaultData;
     });
     if (res.data['retcode'] !== 0) {
+        if (DEV_LOG) console.log("获取角色信息错误失败")
         return defaultData;
     }
     return res.data;
@@ -173,10 +176,11 @@ async function getAwards() {
         method: "GET",
         url: GENSHIN_SIGN_CHECKIN_REWARDS_URL,
     }).catch(err => {
-        console.error(err)
+        if (DEV_LOG) console.error("获取奖励信息信息错误", err)
         return defaultData;
     });
     if (res.data['retcode'] !== 0) {
+        if (DEV_LOG) console.log("获取奖励信息信息失败", res.data)
         return defaultData;
     }
     return res.data.data['awards'];
@@ -190,15 +194,11 @@ async function Sign_In(config) {
         const post_data = `{"act_id":"${GENSHIN_SIGN_ACT_ID}","region":"${GENSHIN_ROLE.region}","uid":"${GENSHIN_ROLE.game_uid}"}`;
         await setHeaders(cookie, await getDS())
         const count = 3;//重试次数
-        for (let i = 0; i <= count; i++) {
-            if (i !== 0) {
-                console.info(`触发验证码，即将进行第${i}次重试，最多3次`)
-            }
-
+        for (let i = 0; i <= count; ++i) {
             const res = await $axios.request({
                 method: 'POST', url: GENSHIN_SIGN_URL, headers: HEADERS, data: post_data
             }).catch(err => {
-                console.error('原神米游社签到错误\n' + err);
+                if (DEV_LOG) console.error('原神米游社签到错误', err);
             });
             const res_data = res.data;
             const res_data_data = res.data;
@@ -232,14 +232,18 @@ async function Sign_In(config) {
             //触发验证码
             if (res_data["retcode"] === 0 && Number(res_data_data.data["success"]) === 1) {
                 if (config['OCR_TOKEN'].length > 0) {
+                    console.info(`触发验证码，即将进行第${i + 1}次验证，最多${count}次...`)
                     const data = await getValidate(config, res_data_data.data['gt'], res_data_data.data['challenge'], GENSHIN_SIGN_REFERER);
-                    const validate = data.data['validate'] ? data.data['validate'] : null;
-                    if (validate) {
+                    if (data !== 0) {
                         console.info('验证成功，即将签到...')
                         await sleep(3000);
-                        await setHeaders(cookie, await getDS(), res_data_data.data['challenge'], validate);
+                        await setHeaders(cookie, await getDS(), res_data_data.data['challenge'], data.data['validate']);
                         continue;
+                    } else {
+                        console.info('验证失败，即将重试...')
                     }
+                } else {
+                    console.info(`触发验证码，未进行验证，即将进行第${count}次重试...`)
                 }
                 await sleep(3000);
             }
@@ -256,11 +260,12 @@ async function getValidate(config, gt, challenge, referer) {
     const res = await $axios.request({
         method: 'POST', url: OCR_URL
     }).catch(err => {
-        console.error('验证码识别错误\n' + err);
-        return null;
+        if (DEV_LOG) console.error('验证码识别错误', err);
+        return 0;
     });
     if (res.data.code !== 0) {
-        return null;
+        if (DEV_LOG) console.log('验证码识别失败', res.data)
+        return 0;
     }
     return res.data;
 }
@@ -292,10 +297,10 @@ async function dingdingBot(config, title, content) {
         const res = await $axios.request({
             method: 'POST', url: pushUrl, headers: headers, data: JSON.stringify(post_data)
         }).catch(err => {
-            console.error(err);
+            if (DEV_LOG) console.error('钉钉推送错误！', err);
         })
         if (res.data['errcode'] !== 0) {
-            console.error('钉钉推送失败！\n');
+            console.info('钉钉推送失败！\n');
         }
         console.info('钉钉推送成功！\n');
     }
