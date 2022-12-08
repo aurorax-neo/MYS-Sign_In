@@ -66,7 +66,7 @@ const sleep = (millisecond) => new Promise((resolve) => setTimeout(resolve, mill
 
 //axios
 const $axios = axios.create({
-    // timeout: 15000
+    timeout: 30000
 });
 
 //获取CONFIG配置
@@ -237,7 +237,7 @@ async function Sign_In(config) {
                     if (data !== 0) {
                         console.info('验证成功，即将签到...')
                         await sleep(3000);
-                        await setHeaders(cookie, await getDS(), res_data_data.data['challenge'], data.data['validate']);
+                        await setHeaders(cookie, await getDS(), data.data['challenge'], data.data['validate']);
                         continue;
                     } else {
                         console.info('验证失败，即将重试...')
@@ -256,14 +256,34 @@ async function Sign_In(config) {
 
 //OCR识别验证码
 async function getValidate(config, gt, challenge, referer) {
-    const OCR_URL = `https://api.ocr.kuxi.tech/api/recognize?token=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${referer}`;
+    const API = 'http://api.rrocr.com/api/'
+
+    // 查询积分
+    const res_ = await $axios.request({
+        method: 'get', url: `${API}integral.html?appkey=${config['OCR_TOKEN']}`, timeout: 60000
+    }).catch(err => {
+        if (DEV_LOG) console.error('查询积分错误', err);
+        return 0;
+    });
+    if (res_.data['status'] === -1) {
+        if (DEV_LOG) console.log('查询积分失败', res_.data)
+        return 0;
+    }
+    if (res_.data['integral'] < 10) {
+        if (DEV_LOG) console.log('积分不足', res_.data)
+        return 0;
+    }
+
+    // OCR识别
     const res = await $axios.request({
-        method: 'POST', url: OCR_URL
+        method: 'POST',
+        url: `${API}recognize.html?appkey=${config['OCR_TOKEN']}&gt=${gt}&challenge=${challenge}&referer=${referer}`,
+        timeout: 60000
     }).catch(err => {
         if (DEV_LOG) console.error('验证码识别错误', err);
         return 0;
     });
-    if (res.data.code !== 0) {
+    if (res.data['status'] !== 0) {
         if (DEV_LOG) console.log('验证码识别失败', res.data)
         return 0;
     }
