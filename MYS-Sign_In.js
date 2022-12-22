@@ -57,7 +57,7 @@ let HEADERS = {
 
 //控制台参数获取
 function parse_arguments() {
-    program.option('--configpath <>', '配置路径', './ysconfig.json').parse();
+    program.option('--configpath <>', '配置路径', `${process.cwd()}/ysconfig.json`).parse();
     return program.opts();
 }
 
