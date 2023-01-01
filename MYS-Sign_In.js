@@ -18,22 +18,10 @@ const SYS_VERSION = "12";
 const APP_VERSION = "2.38.1";
 const USER_AGENT = `Mozilla/5.0 (Linux; Android 12; Unspecified Device) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/103.0.5060.129 Mobile Safari/537.36 miHoYoBBS/${APP_VERSION}`;
 
-const DEV_LOG = false
+const DEV_LOG = true
 
 //全局配置文件
 let CONFIG = {};
-
-//GENSHIN角色信息
-let GENSHIN_ROLE = {
-    game_biz: '',
-    region: '',
-    game_uid: '',
-    nickname: '',
-    level: -1,
-    is_chosen: false,
-    region_name: '',
-    is_official: false
-};
 
 //GENSHIN请求头
 let HEADERS = {
@@ -96,29 +84,38 @@ async function setHeaders(cookie, ds, challenge = '', validate = '') {
 
 //获取GENSHIN角色信息
 async function getRole(config) {
+    const defaultRole = {
+        game_biz: '',
+        region: '',
+        game_uid: '',
+        nickname: '',
+        level: -1,
+        is_chosen: false,
+        region_name: '',
+        is_official: false
+    };
     await setHeaders(config.cookie, await getDS());
     if (HEADERS.cookie === 0) {
         if (DEV_LOG) console.log('cookie错误，重新获取!!!')
-        return 0;
+        return defaultRole;
     }
     //利用cookie登录
     const res = await $axios.request({
         method: 'GET', url: GENSHIN_ROLE_URL, headers: HEADERS
     }).catch(err => {
         if (DEV_LOG) console.error('登录错误\n' + err);
-        return 0;
+        return defaultRole;
     });
     //登录未成功
     if (res.data['retcode'] !== 0) {
         if (DEV_LOG) console.log('帐号未登录！请检查cookie!!!', res.data);
-        return 0;
+        return defaultRole;
     }
-    GENSHIN_ROLE = res.data.data.list[0]
-    return res.data;
+    return res.data.data.list[0]
 }
 
 //获取GENSHIN签到信息
-async function getSignInfo(config) {
+async function getSignInfo(config,role) {
     const defaultData = {
         retcode: -1,
         message: 'no',
@@ -140,15 +137,15 @@ async function getSignInfo(config) {
         headers: HEADERS,
         params: {
             act_id: GENSHIN_SIGN_ACT_ID,
-            region: GENSHIN_ROLE.region,
-            uid: GENSHIN_ROLE.game_uid
+            region: role.region,
+            uid: role.game_uid
         }
     }).catch(err => {
-        if (DEV_LOG) console.error("获取角色信息错误", err)
+        if (DEV_LOG) console.error("获取签到信息错误\n", err)
         return defaultData;
     });
     if (res.data['retcode'] !== 0) {
-        if (DEV_LOG) console.log("获取角色信息错误失败")
+        if (DEV_LOG) console.log("获取签到信息失败")
         return defaultData;
     }
     return res.data;
@@ -187,11 +184,11 @@ async function getAwards() {
 }
 
 // GENSHIN签到
-async function Sign_In(config) {
-    if (GENSHIN_ROLE !== 0) {
+async function Sign_In(config, role) {
+    if (role.level !== -1) {
         const cookie = config.cookie;
-        let message = `【${GENSHIN_ROLE.nickname}】[ UID : ${GENSHIN_ROLE.game_uid} ]\n【${GENSHIN_ROLE.region_name}】[ Lv : ${GENSHIN_ROLE.level} ]\n`;
-        const post_data = `{"act_id":"${GENSHIN_SIGN_ACT_ID}","region":"${GENSHIN_ROLE.region}","uid":"${GENSHIN_ROLE.game_uid}"}`;
+        let message = `【${role.nickname}】[ UID : ${role.game_uid} ]\n【${role.region_name}】[ Lv : ${role.level} ]\n`;
+        const post_data = `{"act_id":"${GENSHIN_SIGN_ACT_ID}","region":"${role.region}","uid":"${role.game_uid}"}`;
         await setHeaders(cookie, await getDS())
         const count = 3;//重试次数
         for (let i = 0; i <= count; ++i) {
@@ -203,7 +200,7 @@ async function Sign_In(config) {
             const res_data = res.data;
             const res_data_data = res.data;
 
-            const signInfo = await getSignInfo(config);
+            const signInfo = await getSignInfo(config,role);
             const sign_days = signInfo.data["total_sign_day"];
             let awards = await getAwards();
             awards = awards[sign_days - 1];
@@ -292,7 +289,6 @@ async function getValidate(config, gt, challenge, referer) {
 
 //钉钉自定义机器人推送
 async function dingdingBot(config, title, content) {
-
     const SWITCH = config['DD_BOT']['SWITCH'];
     const access_token = config['DD_BOT']['DD_BOT_TOKEN'];
     const secret = config['DD_BOT']['DD_BOT_SECRET'];
@@ -338,8 +334,8 @@ async function main() {
     console.info('共获取' + YuanShenConfig.length + '个用户\n');
     for (const i in YuanShenConfig) {
         console.info(`第${Number(i) + 1}位用户开始签到...`)
-        await getRole(YuanShenConfig[i]);
-        const message = await Sign_In(YuanShenConfig[i]);
+        const role = await getRole(YuanShenConfig[i]);
+        const message = await Sign_In(YuanShenConfig[i], role);
         console.info(message)
         await dingdingBot(YuanShenConfig[i], '[米游社 原神签到]', message);
         await sleep(3000);
